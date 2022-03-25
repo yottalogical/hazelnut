@@ -88,15 +88,6 @@ let rec erase_exp: zexp => hexp =
   | RAsc(e, t) => Asc(e, erase_typ(t))
   | NEHole(e) => NEHole(erase_exp(e));
 
-let typ_movement = (e: ztyp, d: dir): option(ztyp) =>
-  switch (e, d) {
-  | (Cursor(Arrow(t1, t2)), Child(One)) => Some(LArrow(Cursor(t1), t2))
-  | (Cursor(Arrow(t1, t2)), Child(Two)) => Some(RArrow(t1, Cursor(t2)))
-  | (LArrow(Cursor(t1), t2), Parent)
-  | (RArrow(t1, Cursor(t2)), Parent) => Some(Cursor(Arrow(t1, t2)))
-  | _ => None
-  };
-
 let exp_movement = (e: zexp, d: dir): option(zexp) =>
   switch (e, d) {
   | (Cursor(Asc(e, t)), Child(One)) => Some(LAsc(Cursor(e), t))
@@ -125,7 +116,12 @@ let exp_movement = (e: zexp, d: dir): option(zexp) =>
 
 let rec typ_action = (t: ztyp, a: action): option(ztyp) =>
   switch (t, a) {
-  | (t, Move(d)) => typ_movement(t, d)
+  | (Cursor(Arrow(t1, t2)), Move(Child(One))) =>
+    Some(LArrow(Cursor(t1), t2))
+  | (Cursor(Arrow(t1, t2)), Move(Child(Two))) =>
+    Some(RArrow(t1, Cursor(t2)))
+  | (LArrow(Cursor(t1), t2), Move(Parent))
+  | (RArrow(t1, Cursor(t2)), Move(Parent)) => Some(Cursor(Arrow(t1, t2)))
 
   | (_, Del) => Some(Cursor(Hole))
 
