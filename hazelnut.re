@@ -29,8 +29,12 @@ type zexp =
   | RAsc(hexp, ztyp)
   | NEHole(zexp);
 
+type child =
+  | One
+  | Two;
+
 type dir =
-  | Child(int)
+  | Child(child)
   | Parent;
 
 type shape =
@@ -70,6 +74,101 @@ let rec erase_exp: zexp => hexp =
   | LAsc(e, t) => Asc(erase_exp(e), t)
   | RAsc(e, t) => Asc(e, erase_typ(t))
   | NEHole(e) => NEHole(erase_exp(e));
+
+let exp_movement = (e: zexp, d: dir): option(zexp) =>
+  switch (e, d) {
+  | (Cursor(Var(_)), Child(_)) => None
+  | (Cursor(Lam(x, e)), Child(One)) => Some(Lam(x, Cursor(e)))
+  | (Cursor(Lam(_)), Child(Two)) => None
+  | (Cursor(Ap(e1, e2)), Child(One)) => Some(LAp(Cursor(e1), e2))
+  | (Cursor(Ap(e1, e2)), Child(Two)) => Some(RAp(e1, Cursor(e2)))
+  | (Cursor(Num(_)), Child(_)) => None
+  | (Cursor(Plus(e1, e2)), Child(One)) => Some(LPlus(Cursor(e1), e2))
+  | (Cursor(Plus(e1, e2)), Child(Two)) => Some(RPlus(e1, Cursor(e2)))
+  | (Cursor(Asc(e, t)), Child(One)) => Some(LAsc(Cursor(e), t))
+  | (Cursor(Asc(e, t)), Child(Two)) => Some(RAsc(e, Cursor(t)))
+  | (Cursor(EHole), Child(_)) => None
+  | (Cursor(NEHole(e)), Child(One)) => Some(NEHole(Cursor(e)))
+  | (Cursor(NEHole(_)), Child(Two)) => None
+
+  | (Cursor(_), Parent) => None
+
+  | (Lam(_), Child(_))
+  | (LAp(_), Child(_))
+  | (RAp(_), Child(_))
+  | (LPlus(_), Child(_))
+  | (RPlus(_), Child(_))
+  | (LAsc(_), Child(_))
+  | (RAsc(_), Child(_))
+  | (NEHole(_), Child(_)) => None
+
+  | (Lam(x, Cursor(e)), Parent) => Some(Cursor(Lam(x, e)))
+  | (LAp(Cursor(e1), e2), Parent)
+  | (RAp(e1, Cursor(e2)), Parent) => Some(Cursor(Ap(e1, e2)))
+  | (LPlus(Cursor(e1), e2), Parent)
+  | (RPlus(e1, Cursor(e2)), Parent) => Some(Cursor(Plus(e1, e2)))
+  | (LAsc(Cursor(e), t), Parent)
+  | (RAsc(e, Cursor(t)), Parent) => Some(Cursor(Asc(e, t)))
+  | (NEHole(Cursor(e)), Parent) => Some(Cursor(NEHole(e)))
+
+  | (
+      Lam(
+        _,
+        Lam(_) | LAp(_) | RAp(_) | LPlus(_) | RPlus(_) | LAsc(_) | RAsc(_) |
+        NEHole(_),
+      ),
+      Parent,
+    )
+  | (
+      LAp(
+        Lam(_) | LAp(_) | RAp(_) | LPlus(_) | RPlus(_) | LAsc(_) | RAsc(_) |
+        NEHole(_),
+        _,
+      ),
+      Parent,
+    )
+  | (
+      RAp(
+        _,
+        Lam(_) | LAp(_) | RAp(_) | LPlus(_) | RPlus(_) | LAsc(_) | RAsc(_) |
+        NEHole(_),
+      ),
+      Parent,
+    )
+  | (
+      LPlus(
+        Lam(_) | LAp(_) | RAp(_) | LPlus(_) | RPlus(_) | LAsc(_) | RAsc(_) |
+        NEHole(_),
+        _,
+      ),
+      Parent,
+    )
+  | (
+      RPlus(
+        _,
+        Lam(_) | LAp(_) | RAp(_) | LPlus(_) | RPlus(_) | LAsc(_) | RAsc(_) |
+        NEHole(_),
+      ),
+      Parent,
+    )
+  | (
+      LAsc(
+        Lam(_) | LAp(_) | RAp(_) | LPlus(_) | RPlus(_) | LAsc(_) | RAsc(_) |
+        NEHole(_),
+        _,
+      ),
+      Parent,
+    )
+  | (RAsc(_, LArrow(_) | RArrow(_)), Parent)
+  | (
+      NEHole(
+        Lam(_) | LAp(_) | RAp(_) | LPlus(_) | RPlus(_) | LAsc(_) | RAsc(_) |
+        NEHole(_),
+      ),
+      Parent,
+    ) =>
+    None
+  };
 
 let rec typ_action = (t: ztyp, a: action): ztyp => ();
 
