@@ -1,3 +1,16 @@
+// Maybe Monad
+let ( let* ) = (x: option('a), f: 'a => option('b)): option('b) =>
+  switch (x) {
+  | Some(x) => f(x)
+  | None => None
+  };
+
+// Maybe Monad
+let (let+) = (x: option('a), f: 'a => 'b): option('b) => {
+  let* x = x;
+  Some(f(x));
+};
+
 type htyp =
   | Arrow(htyp, htyp)
   | Num
@@ -189,7 +202,20 @@ let exp_movement = (e: zexp, d: dir): option(zexp) =>
     None
   };
 
-let rec typ_action = (t: ztyp, a: action): ztyp => ();
+let rec typ_action = (t: ztyp, a: action): option(ztyp) =>
+  switch (t, a) {
+  | (t, Move(d)) => typ_movement(t, d)
+  | (_, Del) => Some(Cursor(Hole))
+  | (Cursor(t), Construct(Arrow)) => Some(RArrow(t, Cursor(Hole)))
+  | (Cursor(Hole), Construct(Num)) => Some(Cursor(Num))
+  | (LArrow(zt, ht), a) =>
+    let+ zt' = typ_action(zt, a);
+    LArrow(zt', ht);
+  | (RArrow(ht, zt), a) =>
+    let+ zt' = typ_action(zt, a);
+    RArrow(ht, zt');
+  | _ => None
+  };
 
 let rec syn_action =
         (ctx: typctx, (e: zexp, t: htyp), a: action): (zexp, htyp) =>
