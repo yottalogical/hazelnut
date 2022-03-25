@@ -75,6 +75,25 @@ let rec erase_exp: zexp => hexp =
   | RAsc(e, t) => Asc(e, erase_typ(t))
   | NEHole(e) => NEHole(erase_exp(e));
 
+let typ_movement = (e: ztyp, d: dir): option(ztyp) =>
+  switch (e, d) {
+  | (Cursor(Arrow(t1, t2)), Child(One)) => Some(LArrow(Cursor(t1), t2))
+  | (Cursor(Arrow(t1, t2)), Child(Two)) => Some(RArrow(t1, Cursor(t2)))
+  | (Cursor(Num), Child(_)) => None
+  | (Cursor(Hole), Child(_)) => None
+
+  | (Cursor(_), Parent) => None
+
+  | (LArrow(_), Child(_))
+  | (RArrow(_), Child(_)) => None
+
+  | (LArrow(Cursor(t1), t2), Parent)
+  | (RArrow(t1, Cursor(t2)), Parent) => Some(Cursor(Arrow(t1, t2)))
+
+  | (LArrow(LArrow(_) | RArrow(_), _), Parent)
+  | (RArrow(_, LArrow(_) | RArrow(_)), Parent) => None
+  };
+
 let exp_movement = (e: zexp, d: dir): option(zexp) =>
   switch (e, d) {
   | (Cursor(Var(_)), Child(_)) => None
