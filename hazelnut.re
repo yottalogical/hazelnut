@@ -50,6 +50,9 @@ type action =
   | Del
   | Finish;
 
+module TypCtx = Map.Make(String);
+type typctx = TypCtx.t(htyp);
+
 let rec erase_typ: ztyp => htyp =
   fun
   | Cursor(t) => t
@@ -67,3 +70,11 @@ let rec erase_exp: zexp => hexp =
   | LAsc(e, t) => Asc(erase_exp(e), t)
   | RAsc(e, t) => Asc(e, erase_typ(t))
   | NEHole(e) => NEHole(erase_exp(e));
+
+let rec typ_action = (t: ztyp, a: action): ztyp => ();
+
+let rec syn_action =
+        (ctx: typctx, (e: zexp, t: htyp), a: action): (zexp, htyp) =>
+  ()
+
+and ana_action = (ctx: typctx, e: zexp, a: action, t: htyp): zexp => ();
