@@ -139,7 +139,43 @@ let rec typ_action = (t: ztyp, a: action): option(ztyp) =>
   };
 
 let rec syn_action =
-        (ctx: typctx, (e: zexp, t: htyp), a: action): (zexp, htyp) =>
-  ()
+        (ctx: typctx, (e: zexp, t: htyp), a: action): option((zexp, htyp)) =>
+  switch (e, t, a) {
+  | (Cursor(Asc(e1, t1)), _, Move(Child(One))) =>
+    Some((LAsc(Cursor(e1), t1), t))
+  | (Cursor(Asc(e1, t1)), _, Move(Child(Two))) =>
+    Some((RAsc(e1, Cursor(t1)), t))
+  | (LAsc(Cursor(e1), t1), _, Move(Parent))
+  | (RAsc(e1, Cursor(t1)), _, Move(Parent)) =>
+    Some((Cursor(Asc(e1, t1)), t))
+
+  | (Cursor(Lam(x, e1)), _, Move(Child(One))) =>
+    Some((Lam(x, Cursor(e1)), t))
+  | (Lam(x, Cursor(e1)), _, Move(Parent)) =>
+    Some((Cursor(Lam(x, e1)), t))
+
+  | (Cursor(Plus(e1, e2)), _, Move(Child(One))) =>
+    Some((LPlus(Cursor(e1), e2), t))
+  | (Cursor(Plus(e1, e2)), _, Move(Child(Two))) =>
+    Some((RPlus(e1, Cursor(e2)), t))
+  | (LPlus(Cursor(e1), e2), _, Move(Parent))
+  | (RPlus(e1, Cursor(e2)), _, Move(Parent)) =>
+    Some((Cursor(Plus(e1, e2)), t))
+
+  | (Cursor(Ap(e1, e2)), _, Move(Child(One))) =>
+    Some((LAp(Cursor(e1), e2), t))
+  | (Cursor(Ap(e1, e2)), _, Move(Child(Two))) =>
+    Some((RAp(e1, Cursor(e2)), t))
+  | (LAp(Cursor(e1), e2), _, Move(Parent))
+  | (RAp(e1, Cursor(e2)), _, Move(Parent)) =>
+    Some((Cursor(Ap(e1, e2)), t))
+
+  | (Cursor(NEHole(e1)), _, Move(Child(One))) =>
+    Some((NEHole(Cursor(e1)), t))
+  | (NEHole(Cursor(e1)), _, Move(Parent)) =>
+    Some((Cursor(NEHole(e1)), t))
+
+  | _ => None
+  }
 
 and ana_action = (ctx: typctx, e: zexp, a: action, t: htyp): zexp => ();
