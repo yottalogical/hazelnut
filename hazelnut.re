@@ -92,128 +92,53 @@ let typ_movement = (e: ztyp, d: dir): option(ztyp) =>
   switch (e, d) {
   | (Cursor(Arrow(t1, t2)), Child(One)) => Some(LArrow(Cursor(t1), t2))
   | (Cursor(Arrow(t1, t2)), Child(Two)) => Some(RArrow(t1, Cursor(t2)))
-  | (Cursor(Num), Child(_)) => None
-  | (Cursor(Hole), Child(_)) => None
-
-  | (Cursor(_), Parent) => None
-
-  | (LArrow(_), Child(_))
-  | (RArrow(_), Child(_)) => None
-
   | (LArrow(Cursor(t1), t2), Parent)
   | (RArrow(t1, Cursor(t2)), Parent) => Some(Cursor(Arrow(t1, t2)))
-
-  | (LArrow(LArrow(_) | RArrow(_), _), Parent)
-  | (RArrow(_, LArrow(_) | RArrow(_)), Parent) => None
+  | _ => None
   };
 
 let exp_movement = (e: zexp, d: dir): option(zexp) =>
   switch (e, d) {
-  | (Cursor(Var(_)), Child(_)) => None
-  | (Cursor(Lam(x, e)), Child(One)) => Some(Lam(x, Cursor(e)))
-  | (Cursor(Lam(_)), Child(Two)) => None
-  | (Cursor(Ap(e1, e2)), Child(One)) => Some(LAp(Cursor(e1), e2))
-  | (Cursor(Ap(e1, e2)), Child(Two)) => Some(RAp(e1, Cursor(e2)))
-  | (Cursor(Num(_)), Child(_)) => None
-  | (Cursor(Plus(e1, e2)), Child(One)) => Some(LPlus(Cursor(e1), e2))
-  | (Cursor(Plus(e1, e2)), Child(Two)) => Some(RPlus(e1, Cursor(e2)))
   | (Cursor(Asc(e, t)), Child(One)) => Some(LAsc(Cursor(e), t))
   | (Cursor(Asc(e, t)), Child(Two)) => Some(RAsc(e, Cursor(t)))
-  | (Cursor(EHole), Child(_)) => None
-  | (Cursor(NEHole(e)), Child(One)) => Some(NEHole(Cursor(e)))
-  | (Cursor(NEHole(_)), Child(Two)) => None
-
-  | (Cursor(_), Parent) => None
-
-  | (Lam(_), Child(_))
-  | (LAp(_), Child(_))
-  | (RAp(_), Child(_))
-  | (LPlus(_), Child(_))
-  | (RPlus(_), Child(_))
-  | (LAsc(_), Child(_))
-  | (RAsc(_), Child(_))
-  | (NEHole(_), Child(_)) => None
-
-  | (Lam(x, Cursor(e)), Parent) => Some(Cursor(Lam(x, e)))
-  | (LAp(Cursor(e1), e2), Parent)
-  | (RAp(e1, Cursor(e2)), Parent) => Some(Cursor(Ap(e1, e2)))
-  | (LPlus(Cursor(e1), e2), Parent)
-  | (RPlus(e1, Cursor(e2)), Parent) => Some(Cursor(Plus(e1, e2)))
   | (LAsc(Cursor(e), t), Parent)
   | (RAsc(e, Cursor(t)), Parent) => Some(Cursor(Asc(e, t)))
+
+  | (Cursor(Lam(x, e)), Child(One)) => Some(Lam(x, Cursor(e)))
+  | (Lam(x, Cursor(e)), Parent) => Some(Cursor(Lam(x, e)))
+
+  | (Cursor(Plus(e1, e2)), Child(One)) => Some(LPlus(Cursor(e1), e2))
+  | (Cursor(Plus(e1, e2)), Child(Two)) => Some(RPlus(e1, Cursor(e2)))
+  | (LPlus(Cursor(e1), e2), Parent)
+  | (RPlus(e1, Cursor(e2)), Parent) => Some(Cursor(Plus(e1, e2)))
+
+  | (Cursor(Ap(e1, e2)), Child(One)) => Some(LAp(Cursor(e1), e2))
+  | (Cursor(Ap(e1, e2)), Child(Two)) => Some(RAp(e1, Cursor(e2)))
+  | (LAp(Cursor(e1), e2), Parent)
+  | (RAp(e1, Cursor(e2)), Parent) => Some(Cursor(Ap(e1, e2)))
+
+  | (Cursor(NEHole(e)), Child(One)) => Some(NEHole(Cursor(e)))
   | (NEHole(Cursor(e)), Parent) => Some(Cursor(NEHole(e)))
 
-  | (
-      Lam(
-        _,
-        Lam(_) | LAp(_) | RAp(_) | LPlus(_) | RPlus(_) | LAsc(_) | RAsc(_) |
-        NEHole(_),
-      ),
-      Parent,
-    )
-  | (
-      LAp(
-        Lam(_) | LAp(_) | RAp(_) | LPlus(_) | RPlus(_) | LAsc(_) | RAsc(_) |
-        NEHole(_),
-        _,
-      ),
-      Parent,
-    )
-  | (
-      RAp(
-        _,
-        Lam(_) | LAp(_) | RAp(_) | LPlus(_) | RPlus(_) | LAsc(_) | RAsc(_) |
-        NEHole(_),
-      ),
-      Parent,
-    )
-  | (
-      LPlus(
-        Lam(_) | LAp(_) | RAp(_) | LPlus(_) | RPlus(_) | LAsc(_) | RAsc(_) |
-        NEHole(_),
-        _,
-      ),
-      Parent,
-    )
-  | (
-      RPlus(
-        _,
-        Lam(_) | LAp(_) | RAp(_) | LPlus(_) | RPlus(_) | LAsc(_) | RAsc(_) |
-        NEHole(_),
-      ),
-      Parent,
-    )
-  | (
-      LAsc(
-        Lam(_) | LAp(_) | RAp(_) | LPlus(_) | RPlus(_) | LAsc(_) | RAsc(_) |
-        NEHole(_),
-        _,
-      ),
-      Parent,
-    )
-  | (RAsc(_, LArrow(_) | RArrow(_)), Parent)
-  | (
-      NEHole(
-        Lam(_) | LAp(_) | RAp(_) | LPlus(_) | RPlus(_) | LAsc(_) | RAsc(_) |
-        NEHole(_),
-      ),
-      Parent,
-    ) =>
-    None
+  | _ => None
   };
 
 let rec typ_action = (t: ztyp, a: action): option(ztyp) =>
   switch (t, a) {
   | (t, Move(d)) => typ_movement(t, d)
+
   | (_, Del) => Some(Cursor(Hole))
+
   | (Cursor(t), Construct(Arrow)) => Some(RArrow(t, Cursor(Hole)))
   | (Cursor(Hole), Construct(Num)) => Some(Cursor(Num))
+
   | (LArrow(zt, ht), a) =>
     let+ zt' = typ_action(zt, a);
     LArrow(zt', ht);
   | (RArrow(ht, zt), a) =>
     let+ zt' = typ_action(zt, a);
     RArrow(ht, zt');
+
   | _ => None
   };
 
